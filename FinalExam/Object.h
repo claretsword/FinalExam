@@ -1,33 +1,34 @@
-#pragma once
+ï»¿#pragma once
 #include <GLFW/glfw3.h>
+#include "Transform.h"
 
 // Base class
 class Object {
 public:
     virtual void OnCollisionEnter(Object& other) = 0;
-    virtual void Render(int windowWidth, int windowHeight) = 0;
+    virtual void Render(int windowWidth, int windowHeight, float floorHeight) = 0;
+    virtual void Update(float deltaTime) = 0;
+    virtual ~Object() = default;
 };
 
 // Derived classes
 class Player : public Object {
 public:
+    Player() : x(100), y(100), width(50), height(50), velocity(0), gravity(980), jumpForce(500), isJumping(false), rotation(0), jumpIntensity(1.0f), isKeyPressed(false), keyPressDuration(0.0f) {}
+
     void OnCollisionEnter(Object& other) override {
-        // Ãæµ¹ ½Ã Ã³¸® ÄÚµå
+        // ì¶©ëŒ ì‹œ ì²˜ë¦¬ ì½”ë“œ
     }
 
-    void Render(int windowWidth, int windowHeight) override {
-        float size_cm = 50.0f; // Á¤»ç°¢Çü ÇÑ º¯ÀÇ ±æÀÌ (´ÜÀ§: cm)
-        float border_size_cm = 3.0f; // Å×µÎ¸® µÎ²² (´ÜÀ§: cm)
+    void Render(int windowWidth, int windowHeight, float floorHeight) override {
+        float left = x - width / 2;
+        float right = x + width / 2;
+        float bottom = y;
+        float top = y + height;
 
-        // Ã¢ÀÇ Å©±â¿Í µµÇü Å©±â¸¦ ºñÀ²·Î º¯È¯ÇÏ¿© °è»ê
-        float left = (windowWidth - size_cm) / 2.0f;
-        float right = left + size_cm;
-        float bottom = (windowHeight - size_cm) / 2.0f;
-        float top = bottom + size_cm;
-
-        // Å×µÎ¸® ±×¸®±â
-        glLineWidth(border_size_cm);
-        glColor3f(1.0f, 1.0f, 1.0f); // Èò»ö Å×µÎ¸®
+        // í…Œë‘ë¦¬ ê·¸ë¦¬ê¸°
+        glLineWidth(3.0f);
+        glColor3f(1.0f, 1.0f, 1.0f); // í°ìƒ‰ í…Œë‘ë¦¬
         glBegin(GL_LINE_LOOP);
         glVertex2f(left, bottom);
         glVertex2f(right, bottom);
@@ -35,54 +36,161 @@ public:
         glVertex2f(left, top);
         glEnd();
 
-        // »¡°£»öÀ¸·Î Ã¤¿öÁø Á¤»ç°¢Çü ±×¸®±â
+        // ë¹¨ê°„ìƒ‰ìœ¼ë¡œ ì±„ì›Œì§„ ì •ì‚¬ê°í˜• ê·¸ë¦¬ê¸°
+        glPushMatrix();
+        glTranslatef(x, y + height / 2, 0.0f);
+        glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+        glTranslatef(-x, -(y + height / 2), 0.0f);
         glColor3f(1.0f, 0.0f, 0.0f); // R:255, G:0, B:0
         glBegin(GL_QUADS);
-        glVertex2f(left + border_size_cm, bottom + border_size_cm);
-        glVertex2f(right - border_size_cm, bottom + border_size_cm);
-        glVertex2f(right - border_size_cm, top - border_size_cm);
-        glVertex2f(left + border_size_cm, top - border_size_cm);
+        glVertex2f(left + 3, bottom + 3);
+        glVertex2f(right - 3, bottom + 3);
+        glVertex2f(right - 3, top - 3);
+        glVertex2f(left + 3, top - 3);
         glEnd();
+        glPopMatrix();
     }
+
+    void Update(float deltaTime) override {
+        if (isJumping) {
+            y += velocity * deltaTime;
+            velocity -= gravity * deltaTime; // ì¤‘ë ¥ ê°€ì†ë„ ì ìš©
+            rotation += 360 * deltaTime; // ì‹œê³„ ë°©í–¥ìœ¼ë¡œ íšŒì „
+            if (y <= 100.0f) { // ë°”ë‹¥ì— ë‹¿ìœ¼ë©´
+                y = 100.0f;
+                isJumping = false;
+                velocity = 0;
+                rotation = 0;
+            }
+        }
+
+        if (isKeyPressed) {
+            keyPressDuration += deltaTime; // í‚¤ë¥¼ ëˆ„ë¥´ê³  ìˆëŠ” ë™ì•ˆ ì§€ì† ì‹œê°„ ì¦ê°€
+            if (keyPressDuration > 1.5f) {
+                keyPressDuration = 1.5f; // ìµœëŒ€ ì§€ì† ì‹œê°„ ì œí•œ
+            }
+        }
+    }
+
+    void StartJump() {
+        if (!isJumping) {
+            isKeyPressed = true;
+            keyPressDuration = 0.0f; // í‚¤ ëˆ„ë¦„ ì§€ì† ì‹œê°„ ì´ˆê¸°í™”
+        }
+    }
+
+    void EndJump() {
+        if (!isJumping && isKeyPressed) {
+            isJumping = true;
+            jumpIntensity = 1.0f + keyPressDuration; // ì í”„ ê°•ë„ ì„¤ì •
+            velocity = jumpForce * jumpIntensity; // ì í”„ë ¥ ì„¤ì •
+            isKeyPressed = false;
+        }
+    }
+
+    float getX() const { return x; }
+    float getY() const { return y; }
+    float getWidth() const { return width; }
+    float getHeight() const { return height; }
+
+private:
+    float x, y, width, height, velocity, gravity, jumpForce, rotation, jumpIntensity, keyPressDuration;
+    bool isJumping, isKeyPressed;
 };
 
 class EnemyBlock : public Object {
 public:
+    EnemyBlock(float x, float y, float width, float height, float speed)
+        : x(x), y(y), width(width), height(height), speed(speed) {}
+
     void OnCollisionEnter(Object& other) override {
-        // Ãæµ¹ ½Ã Ã³¸® ÄÚµå
+        // ì¶©ëŒ ì‹œ ì²˜ë¦¬ ì½”ë“œ
     }
-    void Render(int windowWidth, int windowHeight) override {
-        // ·»´õ¸µ ÄÚµå
+
+    void Render(int windowWidth, int windowHeight, float floorHeight) override {
+        glColor3f(0.0f, 1.0f, 0.0f); // ë…¹ìƒ‰ (RGB: 0, 255, 0)
+        glBegin(GL_QUADS);
+        glVertex2f(x, floorHeight);
+        glVertex2f(x + width, floorHeight);
+        glVertex2f(x + width, floorHeight + height);
+        glVertex2f(x, floorHeight + height);
+        glEnd();
     }
+
+    void Update(float deltaTime) override {
+        x -= speed * deltaTime; // cm ë‹¨ìœ„ë¡œ ë³€ê²½í•˜ì—¬ ì´ë™ ê±°ë¦¬ ì¦ê°€
+        if (x + width < 0) {
+            x = 800 + rand() % 800; // í™”ë©´ ì˜¤ë¥¸ìª½ìœ¼ë¡œ ì´ë™
+        }
+    }
+
+    float getX() const { return x; }
+    float getY() const { return y; }
+    float getWidth() const { return width; }
+    float getHeight() const { return height; }
+
+private:
+    float x, y, width, height, speed;
 };
+
 
 class Floor : public Object {
 public:
     void OnCollisionEnter(Object& other) override {
-        // Ãæµ¹ ½Ã Ã³¸® ÄÚµå
+        // ì¶©ëŒ ì‹œ ì²˜ë¦¬ ì½”ë“œ
     }
-    void Render(int windowWidth, int windowHeight) override {
-        float floorHeight_cm = 100.0f; // ¹Ù´Ú ³ôÀÌ (´ÜÀ§: cm)
-
-        glColor3f(1.0f, 0.78f, 0.058f); // È²»ö (RGB: 255, 200, 15)
+    void Render(int windowWidth, int windowHeight, float floorHeight) override {
+        glColor3f(1.0f, 0.78f, 0.058f); // í™©ìƒ‰ (RGB: 255, 200, 15)
         glBegin(GL_QUADS);
         glVertex2f(0, 0);
         glVertex2f(windowWidth, 0);
-        glVertex2f(windowWidth, floorHeight_cm);
-        glVertex2f(0, floorHeight_cm);
+        glVertex2f(windowWidth, floorHeight);
+        glVertex2f(0, floorHeight);
         glEnd();
+    }
+
+    void Update(float deltaTime) override {
+        // ë°”ë‹¥ ì—…ë°ì´íŠ¸ ë¡œì§
+    }
+
+    float getHeight() const {
+        return 100.0f; // ë°”ë‹¥ ë†’ì´ (ë‹¨ìœ„: cm)
     }
 };
 
 class Star : public Object {
 public:
     void OnCollisionEnter(Object& other) override {
-        // Ãæµ¹ ½Ã Ã³¸® ÄÚµå
+        // ì¶©ëŒ ì‹œ ì²˜ë¦¬ ì½”ë“œ
+    }
+
+    void Render(int windowWidth, int windowHeight, float floorHeight) override {
+        // ìŠ¤íƒ€ ë Œë”ë§ ì½”ë“œ
+    }
+
+    void Update(float deltaTime) override {
+        // ìŠ¤íƒ€ ì—…ë°ì´íŠ¸ ë¡œì§
     }
 };
 
-int PhysicsAABB(Object& A, Object& B)
+bool PhysicsAABB(Object& A, Object& B)
 {
-    // AABB Ãæµ¹ °Ë»ç
-    return 0;
+    Player* player = dynamic_cast<Player*>(&A);
+    EnemyBlock* enemy = dynamic_cast<EnemyBlock*>(&B);
+    if (player && enemy) {
+        float playerLeft = player->getX() - player->getWidth() / 2;
+        float playerRight = player->getX() + player->getWidth() / 2;
+        float playerBottom = player->getY();
+        float playerTop = player->getY() + player->getHeight();
+
+        float enemyLeft = enemy->getX();
+        float enemyRight = enemy->getX() + enemy->getWidth();
+        float enemyBottom = enemy->getY();
+        float enemyTop = enemy->getY() + enemy->getHeight();
+
+        if (playerRight > enemyLeft && playerLeft < enemyRight && playerTop > enemyBottom && playerBottom < enemyTop) {
+            return true; // ì¶©ëŒ ë°œìƒ
+        }
+    }
+    return false;
 }
