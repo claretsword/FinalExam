@@ -41,14 +41,25 @@ int Update()
 	return 0;
 }
 
-int Render(Player& player)
+int Render(Player& player, Floor& floor, int windowWidth, int windowHeight)
 {
 	// 배경색 설정 (하늘색: R:0, G:30, B:100)
 	glClearColor(0.0f, 0.12f, 0.39f, 1.0f); // R: 0/255, G: 30/255, B: 100/255
 	glClear(GL_COLOR_BUFFER_BIT);
 
+
+	// 좌표계를 픽셀 단위로 설정
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0, 800, 0, 600, -1, 1);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
+	// 바닥 렌더링
+	floor.Render(windowWidth, windowHeight);
+
 	//플레이어 렌더링
-	player.Render();
+	player.Render(windowWidth, windowHeight);
 	
 	
 	return 0;
@@ -83,6 +94,9 @@ int main(void)
 	
 	// Player 객체 생성
 	Player player;
+
+	// Floor 객체 생성
+	Floor floor;
 	
 	
 	while (!glfwWindowShouldClose(window))
@@ -90,7 +104,11 @@ int main(void)
 		glfwPollEvents();
 		Physics();
 		Update();
-		Render(player);
+
+		int windowWidth, windowHeight;
+		glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
+
+		Render(player, floor, windowWidth, windowHeight);
 		glfwSwapBuffers(window);
 	}
 
