@@ -52,36 +52,24 @@ int Initialize()
     return 0;
 }
 
-int Update(Player& player, Floor& floor, EnemyBlock enemies[], int enemyCount, float deltaTime)
+int Update(Player& player, Floor& floor, EnemyBlock enemies[], int enemyCount, Star stars[], int starCount, float deltaTime)
 {
     // 업데이트 관련 처리를 여기에 추가할 수 있습니다.
     player.Update(deltaTime);
     floor.Update(deltaTime);
 
-    int visibleEnemies = 0;
     for (int i = 0; i < enemyCount; ++i) {
         enemies[i].Update(deltaTime);
+    }
 
-        // 화면에 보이는 장애물 개수 카운트
-        if (enemies[i].getX() + enemies[i].getWidth() > 0) {
-            visibleEnemies++;
-        }
-
-        // 화면을 벗어난 장애물은 오른쪽 끝으로 이동
-        if (enemies[i].getX() + enemies[i].getWidth() < 0) {
-            // 이미 보이는 장애물이 3개 이상이면, 갱신하지 않고 다음으로 넘김
-            if (visibleEnemies < 3) {
-                enemies[i].Update(deltaTime);
-            }
-            enemies[i].Update(deltaTime);
-            visibleEnemies = 0;
-        }
+    for (int i = 0; i < starCount; ++i) {
+        stars[i].Update(deltaTime);
     }
 
     return 0;
 }
 
-int Render(Player& player, Floor& floor, EnemyBlock enemies[], int windowWidth, int windowHeight)
+int Render(Player& player, Floor& floor, EnemyBlock enemies[], int enemyCount, Star stars[], int starCount, int windowWidth, int windowHeight)
 {
     // 배경색 설정 (하늘색: R:0, G:30, B:100)
     glClearColor(0.0f, 0.12f, 0.39f, 1.0f); // R: 0/255, G: 30/255, B: 100/255
@@ -104,9 +92,13 @@ int Render(Player& player, Floor& floor, EnemyBlock enemies[], int windowWidth, 
     player.Render(windowWidth, windowHeight, floorHeight);
 
     // 장애물 렌더링
-    const int enemyCount = 4; // 장애물 개수
     for (int i = 0; i < enemyCount; ++i) {
         enemies[i].Render(windowWidth, windowHeight, floorHeight);
+    }
+
+    // 별 렌더링
+    for (int i = 0; i < starCount; ++i) {
+        stars[i].Render(windowWidth, windowHeight, floorHeight);
     }
 
     return 0;
@@ -149,6 +141,16 @@ int main(void)
         {3600, 0, 50, 300, 150.0f}  // 높은 장애물
     };
 
+    // 별 생성 (속도는 블록 속도의 1/3)
+    const int starCount = 5;
+    Star stars[starCount] = {
+        {800, 500, 10, 50.0f},
+        {1200, 550, 20, 50.0f},
+        {1600, 600, 15, 50.0f},
+        {2000, 650, 25, 50.0f},
+        {2400, 700, 18, 50.0f}
+    };
+
     auto lastTime = std::chrono::high_resolution_clock::now();
 
     while (!glfwWindowShouldClose(window))
@@ -164,12 +166,12 @@ int main(void)
             break; // 게임 종료
         }
 
-        Update(player, floor, enemies, enemyCount, deltaTime.count());
+        Update(player, floor, enemies, enemyCount, stars, starCount, deltaTime.count());
 
         int windowWidth, windowHeight;
         glfwGetFramebufferSize(window, &windowWidth, &windowHeight);
 
-        Render(player, floor, enemies, windowWidth, windowHeight);
+        Render(player, floor, enemies, enemyCount, stars, starCount, windowWidth, windowHeight);
         glfwSwapBuffers(window);
     }
 

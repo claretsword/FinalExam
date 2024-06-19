@@ -1,6 +1,13 @@
 ﻿#pragma once
+
 #include <GLFW/glfw3.h>
-#include "Transform.h"
+#include <cstdlib>
+#include <cmath>
+
+// M_PI 상수 정의
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 // Base class
 class Object {
@@ -162,17 +169,36 @@ public:
 
 class Star : public Object {
 public:
+    Star(float x, float y, float size, float speed)
+        : x(x), y(y), size(size), speed(speed) {}
+
     void OnCollisionEnter(Object& other) override {
         // 충돌 시 처리 코드
     }
 
     void Render(int windowWidth, int windowHeight, float floorHeight) override {
-        // 스타 렌더링 코드
+        glColor3f(1.0f, 1.0f, 1.0f); // 흰색
+
+        glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(x, y); // 중심점
+        for (int i = 0; i <= 5; ++i) {
+            float angle = i * 4.0f * M_PI / 5.0f; // 5각 별의 꼭지점 각도
+            float radius = (i % 2 == 0) ? size : size / 2.0f; // 큰/작은 반지름 교차
+            glVertex2f(x + radius * cos(angle), y + radius * sin(angle));
+        }
+        glEnd();
     }
 
     void Update(float deltaTime) override {
-        // 스타 업데이트 로직
+        x -= speed * deltaTime;
+        if (x + size < 0) {
+            x = 800 + rand() % 800;
+            y = 400 + rand() % 200; // 하늘에 띄우기 위해 Y 좌표를 400 이상으로 설정
+        }
     }
+
+private:
+    float x, y, size, speed;
 };
 
 bool PhysicsAABB(Object& A, Object& B)
