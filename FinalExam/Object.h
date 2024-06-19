@@ -26,6 +26,12 @@ public:
         float bottom = y;
         float top = y + height;
 
+        // 테두리와 정사각형 회전을 위한 변환 설정
+        glPushMatrix();
+        glTranslatef(x, y + height / 2, 0.0f);
+        glRotatef(rotation, 0.0f, 0.0f, 1.0f);
+        glTranslatef(-x, -(y + height / 2), 0.0f);
+
         // 테두리 그리기
         glLineWidth(3.0f);
         glColor3f(1.0f, 1.0f, 1.0f); // 흰색 테두리
@@ -37,10 +43,6 @@ public:
         glEnd();
 
         // 빨간색으로 채워진 정사각형 그리기
-        glPushMatrix();
-        glTranslatef(x, y + height / 2, 0.0f);
-        glRotatef(rotation, 0.0f, 0.0f, 1.0f);
-        glTranslatef(-x, -(y + height / 2), 0.0f);
         glColor3f(1.0f, 0.0f, 0.0f); // R:255, G:0, B:0
         glBegin(GL_QUADS);
         glVertex2f(left + 3, bottom + 3);
@@ -48,6 +50,7 @@ public:
         glVertex2f(right - 3, top - 3);
         glVertex2f(left + 3, top - 3);
         glEnd();
+
         glPopMatrix();
     }
 
@@ -132,7 +135,6 @@ public:
 private:
     float x, y, width, height, speed;
 };
-
 
 class Floor : public Object {
 public:

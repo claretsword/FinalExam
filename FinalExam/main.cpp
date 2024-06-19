@@ -60,23 +60,22 @@ int Update(Player& player, Floor& floor, EnemyBlock enemies[], int enemyCount, f
 
     int visibleEnemies = 0;
     for (int i = 0; i < enemyCount; ++i) {
+        enemies[i].Update(deltaTime);
+
+        // 화면에 보이는 장애물 개수 카운트
         if (enemies[i].getX() + enemies[i].getWidth() > 0) {
             visibleEnemies++;
         }
 
         // 화면을 벗어난 장애물은 오른쪽 끝으로 이동
         if (enemies[i].getX() + enemies[i].getWidth() < 0) {
+            // 이미 보이는 장애물이 3개 이상이면, 갱신하지 않고 다음으로 넘김
             if (visibleEnemies < 3) {
                 enemies[i].Update(deltaTime);
-                enemies[i].Update(deltaTime);
             }
-            visibleEnemies = 0;
             enemies[i].Update(deltaTime);
-            if (visibleEnemies >= 3) {
-                break;
-            }
+            visibleEnemies = 0;
         }
-        enemies[i].Update(deltaTime);
     }
 
     return 0;
